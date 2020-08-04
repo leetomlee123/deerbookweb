@@ -1,132 +1,199 @@
 <template>
-    <!-- 创建要控制的区域 -->
-    <div id="app">
-        <div class="panel panel-primary">
-            <div class="panel-heading">
-                <h3 class="panel-title">Add Product</h3>
-            </div>
-            <div class="panel-body form-inline">
-                <label>
-                    Id:
-                    <input type="text" class="form-control" v-model="id">
-                </label>
+    <div class="row">
+        <div class="col-md-4 col-12 book_item" v-for="data in list" :key="data.id">
 
-                <label>
-                    Name:
-                    <input type="text" class="form-control" v-model="name" @keyup.enter="add">
-                </label>
-
-                <label>Keywords Search:
-                    <!-- 注意 ：Vue中所有指令，在调用的时候，都以v- 开头-->
-                    <input type="text" class="form-control" v-model="keywords">
-                </label>
-
-                <input type="button" value="Add" class="btn btn-primary" @click="add">
-            </div>
-        </div>
-
-        <table class="table table-hover table-bordered table-striped">
-            <thead>
-            <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>Time</th>
-                <th>Operation</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="item in search(keywords)" :key="item.id">
-                <td>{{item.id}}</td>
-                <td>{{item.name }}</td>
-                <td>{{item.ctime}}</td>
-                <td>
-                    <a href="#" @click.prevent="del(item.id)">Delete</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div class="book-img col-4">
+        <img :src="data.cover" v-on:click="goTo(data.id)" class="book-img">
     </div>
+    <div class="book-info col-8">
+        <h4 v-on:click="goTo(data.id)">{{data.bookName}}</h4>
+        <p>
+            {{data.BookDesc}}
+        </p>
+        <p>{{data.author}}</p>
+</div>
+        </div>
+    </div>
+
+
+
 </template>
 
 
 <script>
+
     export default {
-        name: "Product",
+        name: "Books",
         data() {
             return {
-                list: [
-                    { id: 1, name: "奔驰", ctime: new Date() },
-                    { id: 2, name: "宝马", ctime: new Date() }
-                ],
-                id: "",
-                name: "",
-                keywords: ""
+                list: [],
+                page: 1,
+                size: 21,
+                loading: false,
+                finished: false
+
             };
         },
+        watch: {
+            // 如果路由有变化，会再次执行该方法
+            "$route": "clear",
+
+        },
+        created() {
+            this.fetchData()
+        },
+        mounted() {
+            window.addEventListener('scroll', this.pageScroll);
+        },
         methods: {
-            add() {
-                // vue中已经实现了数据的双向绑定，每当我们修改了data中的数据，Vue会默认监听到
-                // 数据的改动，自动把最新的数据，应用到页面上
-                this.list.push({ id: this.id, name: this.name, ctime: new Date() });
+            getScrollTop() {
+                var scrollTop = 0;
+                if (document.documentElement && document.documentElement.scrollTop) {
+                    scrollTop = document.documentElement.scrollTop;
+                } else if (document.body) {
+                    scrollTop = document.body.scrollTop;
+                }
+                return scrollTop;
+            }, getClientHeight() {
+                var clientHeight = 0;
+                if (document.body.clientHeight && document.documentElement.clientHeight) {
+                    clientHeight = Math.min(document.body.clientHeight, document.documentElement.clientHeight);
+                } else {
+                    clientHeight = Math.max(document.body.clientHeight, document.documentElement.clientHeight);
+                }
+                return clientHeight;
+            }, getScrollHeight() {
+                return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
             },
+            pageScroll() {
+                if (this.loading) {
+                    return
+                }
+                // let scrollTop = dom.scrollTop;
+                // let domHeight = dom.offsetHeight;
+                // let scrollHeight = dom.scrollHeight;
+                let that = this
 
-            del(id) {
-                // 根据Id删除数据
-                // this.list.some((item, i) => {
-                //     if (item.id == id) {
-                //         this.list.splice(i, 1)
-                //         // 在数组的 some 方法中，如果return true ，就会立即终止这个数组的后续循环
-                //         return true
-                //     }
-                // })
+                if (this.getScrollTop() + this.getClientHeight() + 10 > this.getScrollHeight()) {
+                    that.page += 1
 
-                let index = this.list.findIndex(item => {
-                    if (item.id == id) {
-                        return true;
-                    }
-                });
+                    that.fetchData();
+                    //此处发起AJAX请求
+                }
+                // if (scrollTop + seeHeight == totalHeight) {
+                //     that.page += 1
+                //
+                //     that.fetchData();
+                //
+                // }
 
-                this.list.splice(index, 1);
             },
+            goTo(id) {
+                this.$router.push({path: `/chapters/${id}`})
+            },
+            clear() {
+                this.list = []
+                this.page = 1
+                this.fetchData()
+            },
+            fetchData() {
+                if (this.loading) {
+                    return
+                }
+                this.loading = true;
+                let that = this
 
-            search(keywords) {
-                // let newList = [];
-                // this.list.forEach(item => {
-                //     if (item.name.indexOf(keywords) != -1) {
-                //         newList.push(item)
-                //     }
-                // });
-                // return newList;
+                let category = this.$route.params.category
+                this.$http.get('/book/category/' + category + '/' + this.page + '/' + this.size)
+                    .then(function (response) {
+                        let data = response.data['data']
+                        that.list = that.list.concat(data)
+                        that.loading = false;
+                    })
+                    .catch(function (error) {
+                        console.log(error)
+                    })
 
-                // forEach some fliter findIndex 这些都属于数组的新方法，
-                // 都会对数组的每一项，进行遍历，执行相关的操作
-                return this.list.filter(item => {
-                    //注意:在ES6中，为字符串提供了一个新方法，叫做 String.prototype.includes("要包含的字符串")
-                    // 如果包含，返回true，反之false
-                    if (item.name.includes(keywords)) {
-                        return item;
-                    }
-                });
+
+            },
+            pageChange(i) {
+
+                switch (i) {
+                    case -1:
+                        this.page -= 1
+                        this.fetchData()
+                        break
+                    case 0:
+                        this.page += 1
+                        this.fetchData()
+                        break
+                    default:
+                        this.page = i
+                        this.fetchData()
+                        break
+                }
+                if (this.page > 1) {
+                    this.can_pre = true
+                }
             }
+
         }
-    };
+    }
+    ;
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-    h1,
-    h2 {
-        font-weight: normal;
+    .book-img {
+        width: 72px;
+        height: 96px;
+        margin-right: 12px;
     }
-    ul {
-        list-style-type: none;
-        padding: 0;
+
+    .book_item > div {
+        float: left;
     }
-    li {
-        display: inline-block;
-        margin: 0 10px;
+
+    /*.book-info {*/
+    /*    width: 216px;*/
+    /*}*/
+
+    h4 {
+        font: 16px/21px PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', 'Microsoft YaHei', sans-serif;
+        overflow: hidden;
+        height: 21px;
+
+
+        font-weight: bold;
+
     }
-    a {
-        color: #42b983;
+
+    .book-info p {
+        font: 12px/20px PingFangSC-Regular, '-apple-system', Simsun;
+        overflow: hidden;
+        height: 40px;
+        margin-bottom: 10px;
+        color: #666;
+
+        word-wrap: break-word;
+        word-break: break-all;
+
     }
+
+    .book-img img {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, .35), 0 0 5px #f9f2e9 inset;
+    }
+
+
+    .book-img:hover {
+        -webkit-transform: scale(1.1);
+        -moz-transform: scale(1.1);
+        -o-transform: scale(1.1);
+        transform: scale(1.1);
+    }
+
+
 </style>

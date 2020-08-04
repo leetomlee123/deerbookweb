@@ -1,34 +1,25 @@
 <template>
-    <div>
-
-        <div id="head" class="row">
-            <div id="fmimg" class="col-md-2 col-sm-2" >
-                <img :src="info.Img" style="width: 120px;height: 150px" id="icm">
-            </div>
-            <div id="info" class="col-md-10 col-sm-6">
-                <div id="xinfo" class="row">
-                    <h4 class="col-12">{{info.Name}}</h4>
-                    <p class="col-md-6 col-sm-12">作者: {{info.Author}}</p>
-                    <p class="col-md-6 col-sm-12">动 作：加入书架, 投推荐票, 直达底部</p>
-                    <p class="col-md-6 col-sm-12"><span v-if="isContains(info.LastChapter,'最后')">最后更新:</span>{{info.LastTime}}</p>
-                    <p class="col-md-6 col-sm-12">最新章节: {{info.LastChapter}}
-                    </p>
+    <div class="main-text-wrap ">
+        <div class="text-head">
+            <h3>
+                <span>{{this.cp.name}}</span>
+            </h3>
+        </div>
+        <div v-if="ok">
+            <div class="d-flex justify-content-center" style="text-align: center">
+                <div class="spinner-border text-info" role="status">
+                    <span class="sr-only">Loading...</span>
                 </div>
-                <div>
-                    <p style="overflow: hidden;padding-top: 10px;height: 80px" class="col-md-12 col-sm-12">
-                        {{info.Desc}}</p>
-                </div>
-
             </div>
         </div>
-        <hr/>
-        <div id="body">
-            <div class="row">
-                <div class="col-md-4 col-sm-12" v-for="(data) in cps" :key="data.id" style="margin-bottom: 10px">
-                    <a v-on:click="getContent(data.id)"> {{data.name}}</a>
-                </div>
-
-            </div>
+        <span v-html="content" style="font-size: 20px" class="content">
+        </span>
+        <div class="chapter-control dib-wrap">
+            <a v-on:click="changeCp(-1)" v-bind:class="{disabled:idx-1<0}">上一章</a>
+            <span>|</span>
+            <a v-on:click="chapters()">目录</a>
+            <span>|</span>
+            <a v-on:click="changeCp(1)" v-bind:class="{disabled:idx+1>=this.$store.getters.getLen}">下一章</a>
         </div>
     </div>
 
@@ -41,68 +32,50 @@
         return this.replace(new RegExp(s1, "gm"), s2);
     }
     export default {
-        name: "Chapters",
+        name: "Read",
         data() {
             return {
-                showContent: false,
-                info: '',
-                cps: '',
+
+                idx: this.$route.query.idx,
+                bid: this.$route.query.bid,
+                cp: '',
                 content: '',
-                chapterName: '',
-                id: this.$route.params.id
+                ok: true
             };
         },
 
         created() {
-            this.getBookInfo()
-            this.getChapters()
+
+            this.cp = this.$store.getters.getCp(this.idx)
+
+            this.getContent()
+
         },
 
         methods: {
-            getContent(id) {
+            getContent() {
                 let that = this;
-                this.$http.get('/book/chapter/' + id).then(function (res) {
-                    that.content = res.data.data.content.replaceAll('\n', '<br/><br/>')
+                console.log(this.cp)
+                this.$http.get('/book/chapter/' + that.cp.id).then(function (res) {
+                    that.ok = false
+                    that.content = "&nbsp;&nbsp;&nbsp;&nbsp;" + res.data.data.content.replaceAll('\n', '<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;')
                 });
-                this.showContent = true
-            },
-            isContains(str, substr) {
-                return new RegExp(substr).test(str);
-            },
-            getBookInfo() {
-                let that = this;
-                return this.$http.get('/book/detail/' + this.id).then(function (res) {
-                    that.info = res.data.data
-                    console.log(that.info)
-                });
-            },
-            getChapters() {
-                let that = this;
-                return this.$http.get('/book/chapters/' + this.id + '/' + 0).then(function (res) {
-                    that.cps = res.data.data
-                    console.log(that.cps)
-                });
-            },
 
-            pageChange(i) {
+            },
+            changeCp(i) {
+                let tem_idx = this.idx + i
+                if (tem_idx < 0 || tem_idx > this.$store.getters.getLen) {
+                    return
+                }
+                this.content = ''
+                this.idx = tem_idx
+                this.cp = this.$store.getters.getCp(tem_idx)
+                this.ok = true
+                this.getContent()
+            }
+            , chapters() {
 
-                switch (i) {
-                    case -1:
-                        this.page -= 1
-                        this.fetchData()
-                        break
-                    case 0:
-                        this.page += 1
-                        this.fetchData()
-                        break
-                    default:
-                        this.page = i
-                        this.fetchData()
-                        break
-                }
-                if (this.page > 1) {
-                    this.can_pre = true
-                }
+                this.$router.push({path: `/chapters/${this.bid}`})
             }
 
         }
@@ -112,57 +85,54 @@
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-    #head  div {
-        float: left;
+    .main-text-wrap {
+        background: #ede7da url('https://qidian.gtimg.com/qd/images/read.qidian.com/body_base_bg.5988a.png') repeat;
+        font-family: 'Microsoft YaHei', PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', sans-serif;
+    }
+
+    .chapter-control {
+        height: 70px;
+        margin-bottom: 24px;
+        text-align: center;
+        border: 1px solid #d8d8d8;
+    }
+
+    .chapter-control a {
+        font: 18px/70px PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', 'Microsoft YaHei', sans-serif;
+        width: 30%;
+        display: inline-block;
+        vertical-align: middle;
+        letter-spacing: normal;
+        word-spacing: normal;
+    }
+
+    .chapter-control a:hover {
+        color: #1a1a1a;
+        background: #ede9e1;
+        background: rgba(0, 0, 0, .03);
     }
 
 
-
-    #head {
-        height: 200px;
+    .text-head {
+        position: relative;
+        z-index: 5;
+        margin-bottom: 12px;
     }
 
-    #fmimg {
-        width: 180px;
-        height: 200px;
-    }
-
-
-
-    #icm {
-        width: 100%;
-        height: 100%;
-        transition: transform .3s ease-out;
-        color: #fcfcfa;
-        border-radius: 5px;
-        box-shadow: 0 0 1px #000 inset;
-    }
-
-
-
-
-    p {
-        word-wrap: break-word;
-        word-break: break-all;
+    h3 {
+        font: 24px/32px PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', 'Microsoft YaHei', sans-serif;
         overflow: hidden;
+        height: 32px;
+        margin-bottom: 12px;
     }
 
-    /*#xinfo {*/
-    /*    height: 120px;*/
-    /*}*/
+    .main-text-wrap.font-family01 {
+        font-family: 'Microsoft YaHei', PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', sans-serif;
+    }
 
-    #xinfo p {
-        height: 25px;
-        line-height: 25px;
-        padding-top: 2px;
-
-        margin: auto;
-        margin-top: 10px;
+    .content {
+        line-height: 1.8;
         overflow: hidden;
-        float: left;
-    }
 
-    a:hover {
-        color: #ed4259;
     }
 </style>

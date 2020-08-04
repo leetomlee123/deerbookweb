@@ -1,16 +1,48 @@
 <template>
-    <div id="dissection">
-        <div class="row" style="padding-top: 80px">
-            <div class="col-4" v-for="data in list" :key="data.id" style="margin-bottom: 10px">
+    <div class="row">
 
-                <div class="book-img"><a>
-                    <img :src="data.cover">
-                </a></div>
-                <div class="book-info"><h5>{{data.bookName}}</h5>
-                    <p>{{data.BookDesc}}</p>
-                    <p>{{data.author}}</p></div>
+
+            <!--<div class="col-2 col">-->
+            <!--    <img :src="info.Img">-->
+            <!--</div>-->
+            <div class="col-12">
+                <h1><em>{{info.Name}}</em><span>
+                {{info.Author}}  著
+            </span></h1>
+                <p class="tag">
+                    <span>{{info.BookStatus}}</span>
+                    <span>签约</span>
+                    <span>VIP</span>
+                    <span>{{info.CName}}</span>
+                    <span>评分{{info.Rate}}</span>
+                </p>
+                <p></p>
+                <div class="col-12 intro">{{info.Desc}}</div>
+                <p></p>
+
+                <!--            <p><span v-if="isContains(info.LastChapter,'最后')">最后更新: </span>{{info.LastTime}}</p>-->
 
             </div>
+
+
+
+
+        <div class="col-12 volume">
+            <div class="cover"></div>
+            <h3>正文卷
+                <svg class="bi bi-dot" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"
+                     xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                </svg>
+                共{{info.Count}}章
+            </h3>
+            <ul class="cf">
+                <div class="row">
+                    <div class="col-12 col-md-4" v-for="(data,idx) in cps" :key="data.id">
+                        <li><a v-on:click="getContent(idx)"> {{data.name}}</a></li>
+                    </div>
+                </div>
+            </ul>
         </div>
 
     </div>
@@ -18,99 +50,97 @@
 
 </template>
 
-
 <script>
-
+    String.prototype.replaceAll = function (s1, s2) {
+        return this.replace(new RegExp(s1, "gm"), s2);
+    }
     export default {
-        name: "Books",
+        name: "Chapters",
         data() {
             return {
-                list: [],
-                page: 1,
-                size: 21,
-                loading: false,
-                finished: false
-
+                showContent: false,
+                info: '',
+                cps: [],
+                content: '',
+                chapterName: '',
+                id: this.$route.params.id,
+                ok: true,
+                inShelf: '加入书架'
             };
         },
-        watch: {
-            // 如果路由有变化，会再次执行该方法
-            "$route": "clear",
 
-        },
         created() {
-            this.fetchData()
+            if (this.contains(this.$store.getters.getIds, this.id)) {
+                this.inShelf = '移除书架'
+            }
+            this.getBookInfo()
+            this.getChapters()
         },
-        mounted() {
-            window.addEventListener('scroll', this.pageScroll);
-        },
+
         methods: {
-            getScrollTop() {
-                var scrollTop = 0;
-                if (document.documentElement && document.documentElement.scrollTop) {
-                    scrollTop = document.documentElement.scrollTop;
-                } else if (document.body) {
-                    scrollTop = document.body.scrollTop;
+
+            contains(arr, obj) {
+                let i = arr.length;
+                while (i--) {
+                    if (arr[i] === obj) {
+                        return true;
+                    }
                 }
-                return scrollTop;
-            }, getClientHeight() {
-                var clientHeight = 0;
-                if (document.body.clientHeight && document.documentElement.clientHeight) {
-                    clientHeight = Math.min(document.body.clientHeight, document.documentElement.clientHeight);
+                return false;
+            }
+            ,
+            addToShelf() {
+                let that = this
+                let action = 'add'
+                if (that.inShelf == '移除书架') {
+                    action = 'del'
+                }
+                if (this.$store.getters.getLoginState) {
+                    return this.$http.get('/book/action/' + this.id + '/' + action, {
+                        headers: {'auth': this.$store.getters.getToken}
+                    }).then(function () {
+                        if (action == 'add') {
+                            that.inShelf = '移除书架'
+
+                        } else {
+                            that.inShelf = '加入书架'
+
+                        }
+                    });
                 } else {
-                    clientHeight = Math.max(document.body.clientHeight, document.documentElement.clientHeight);
+                    this.$router.push({path: `/me`})
                 }
-                return clientHeight;
-            }, getScrollHeight() {
-                return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-            },
-            pageScroll() {
-                if (this.loading) {
-                    return
-                }
-                // let scrollTop = dom.scrollTop;
-                // let domHeight = dom.offsetHeight;
-                // let scrollHeight = dom.scrollHeight;
-                let that = this
 
-                if (this.getScrollTop() + this.getClientHeight() + 10 > this.getScrollHeight()) {
-                    that.page += 1
+            }
+            ,
+            getContent(idx
+            ) {
+                let id = this.$route.params.id
+                this.$router.push({path: `/read`, query: {idx: idx, bid: id}})
+            }
+            ,
+            isContains(str, substr) {
+                return new RegExp(substr).test(str);
+            }
+            ,
+            getBookInfo() {
+                let that = this;
+                return this.$http.get('/book/detail/' + this.id).then(function (res) {
+                    that.info = res.data.data
+                });
+            }
+            ,
+            getChapters() {
+                let that = this;
+                return this.$http.get('/book/chapters/' + this.id + '/' + 0).then(function (res) {
+                    that.ok = false
+                    that.cps = res.data.data
+                    that.$store.commit('setCps', that.cps)
 
-                    that.fetchData();
-                    //此处发起AJAX请求
-                }
-                // if (scrollTop + seeHeight == totalHeight) {
-                //     that.page += 1
-                //
-                //     that.fetchData();
-                //
-                // }
+                });
+            }
+            ,
 
-            },
-            clear() {
-                this.list = []
-                this.page = 1
-                this.fetchData()
-            },
-            fetchData() {
-                if (this.loading) {
-                    return
-                }
-                this.loading = true;
-                let that = this
-
-                let category = this.$route.params.category
-                this.$http.get('/book/category/' + category + '/' + this.page + '/' + this.size)
-                    .then(function (response) {
-                        let data = response.data['data']
-                        that.list = that.list.concat(data)
-                        console.log(that.list)
-                        that.loading = false;
-                    })
-                    .catch(function (error) {
-                        console.log(error)
-                    })
-            },
             pageChange(i) {
 
                 switch (i) {
@@ -139,46 +169,183 @@
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+    em {
+        font-style: normal;
+    }
+
+    .book-information {
+        position: relative;
+        z-index: 2;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        background: #fff;
+        height: 162px;
+    }
+
     .book-img {
-        width: 72px;
-        height: 96px;
-        margin-right: 12px;
-    }
-
-    .book-img a img:hover {
-        -webkit-transform: scale(1.1);
-        -moz-transform: scale(1.1);
-        -o-transform: scale(1.1);
-        transform: scale(1.1);
-    }
-
-    .book-img > a > img {
-        width: 100%;
-        height: 100%;
-        transition: transform .3s ease-out;
-        color: #fcfcfa;
-        border-radius: 5px;
-        box-shadow: 0 0 1px #000 inset;
-    }
-
-    .col-4 > div {
         float: left;
+
+        margin: 20px 20px 0;
+    }
+
+    .book-img > img {
+        width: 124px;
+        height: 172px;
     }
 
     .book-info {
-        width: 256px;
+        float: left;
+        margin-top: 20px;
+        display: block;
+        width: 900px;
     }
 
-    .book-info p {
-        font: 12px/20px PingFangSC-Regular, '-apple-system', Simsun;
+    h1 {
+        font: 700 28px/38px PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', 'Microsoft YaHei', sans-serif;
         overflow: hidden;
-        height: 40px;
-        margin-bottom: 10px;
-        color: #666;
+        height: 38px;
+        margin-bottom: 12px;
     }
 
-    p {
-        word-wrap: break-word;
-        word-break: break-all;
+    h1 span {
+        font: 14px/20px PingFangSC-Regular, '-apple-system', Simsun;
+        margin-left: 20px;
+
+    }
+
+    .intro {
+        font: 14px/20px PingFangSC-Regular, '-apple-system', Simsun;
+        /*word-wrap:break-word;*/
+        /*word-break:break-all;*/
+        /*overflow: hidden;*/
+    }
+
+    .book-bottom-p > div {
+        font: 14px/34px PingFangSC-Regular, '-apple-system', Simsun;
+        display: inline-block;
+        width: 102px;
+        height: 34px;
+        margin-right: 15px;
+        text-align: center;
+        vertical-align: middle;
+        border-width: 1px;
+        border-style: solid;
+    }
+
+    .read {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        color: #fff;
+        border-color: #bf2c24;
+        background: #bf2c24;
+    }
+
+    .tag {
+        margin-bottom: 11px;
+    }
+
+    .tag > span {
+        color: #3f5a93;
+        border-color: #9fadc9;
+        font: 12px/22px PingFangSC-Regular, '-apple-system', Simsun;
+        display: inline-block;
+        overflow: hidden;
+        height: 22px;
+        margin-right: 12px;
+        padding: 0 10px;
+        text-align: center;
+        vertical-align: middle;
+        border-width: 1px;
+        border-style: solid;
+        border-radius: 15px;
+    }
+
+    .comment-wrap {
+        position: absolute;
+        top: 0;
+        right: 0;
+        overflow: hidden;
+        max-width: 204px;
+        height: 166px;
+        margin-top: 20px;
+        padding-right: 32px;
+        text-align: right;
+    }
+
+    .volume {
+        /*position: relative;*/
+        /*z-index: 1;*/
+        overflow: hidden;
+        margin-top: 10px;
+        /*width: 1050px;*/
+
+    }
+
+    .volume h3 {
+        font: 700 18px/24px PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', 'Microsoft YaHei', sans-serif;
+        overflow: hidden;
+        height: 24px;
+        padding-bottom: 11px;
+        border-bottom: 1px solid #666;
+    }
+
+
+    .cover {
+        position: absolute;
+        z-index: 1;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: #fff;
+        display: block;
+    }
+
+    .cf {
+        overflow: hidden;
+        width: 1050px;
+        zoom: 1;
+
+        list-style: none outside none;
+
+    }
+
+    .volume ul {
+        overflow: hidden;
+        width: 1050px;
+    }
+
+    .volume li {
+        font: 14px/40px PingFangSC-Regular, '-apple-system', Simsun;
+        float: left;
+        overflow: hidden;
+        width: 350px;
+        height: 40px;
+        padding-right: 60px;
+        display: list-item;
+        text-align: -webkit-match-parent;
+        list-style: none outside none;
+        border-bottom: 1px solid #ebebeb;
+    }
+
+    .volume li a {
+        float: left;
+        overflow: hidden;
+        max-width: 240px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        transition: color .3s, background-color .3s;
+        text-decoration: none;
+        color: #262626;
+        outline: 0;
+    }
+
+    li a:hover {
+        color: #ed4259;
+    }
+
+    .app a {
+        text-decoration: none;
     }
 </style>

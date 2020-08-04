@@ -1,60 +1,27 @@
 <template>
-    <div id="dissection">
-        <div class="row">
-            <div class="col-md-4 col-sm-12 book_item" v-for="data in list" :key="data.id">
 
-                <div class="row">
-                    <div class=" col-4"><a>
-                        <img :src="data.cover" v-on:click="goTo(data.id)" class="book-img">
-                    </a></div>
-                    <div class="book-info col-8"><h5 v-on:click="goTo(data.id)">{{data.bookName}}</h5>
-                        <p>{{data.BookDesc}}</p>
-                        <p>{{data.author}}</p></div>
-                </div>
 
+    <div class="row">
+        <div class="col-md-4 col-sm-12 book_item" v-for="data in list" :key="data.Id">
+            <div class="book-img">
+                <img :src="data.Img" v-on:click="goTo(data.Id)" class="book-img">
+            </div>
+            <div class="book-info">
+                <h4 v-on:click="goTo(data.Id)">{{data.Name}}</h4>
+                <p>
+                    {{data.Desc}}
+                </p>
+                <p>{{data.Author}}</p>
             </div>
         </div>
-
     </div>
-
-
 </template>
 
-<!--<template>-->
-<!--    <div>-->
-
-<!--        <a-row>-->
-<!--            <a-col :md="8" :xs="24" v-for="data in list" :key="data.id">-->
-<!--                &lt;!&ndash;                <div class="book-img "><a>&ndash;&gt;-->
-<!--                &lt;!&ndash;                    <img :src="data.cover" v-on:click="goTo(data.id)">&ndash;&gt;-->
-<!--                &lt;!&ndash;                </a></div>&ndash;&gt;-->
-<!--                &lt;!&ndash;                <div class="book-info "><h5 v-on:click="goTo(data.id)">{{data.bookName}}</h5>&ndash;&gt;-->
-<!--                &lt;!&ndash;                    <p>{{data.BookDesc}}</p>&ndash;&gt;-->
-<!--                &lt;!&ndash;                    <p>{{data.author}}</p></div>&ndash;&gt;-->
-<!--                <a-row>-->
-<!--                    <a-col :md="5" :xs="9"><img class="book-img" :src="data.cover" v-on:click="goTo(data.id)"></a-col>-->
-<!--                    <a-col :md="19" :xs="15"><h2 v-on:click="goTo(data.id)">{{data.bookName}}</h2>-->
-<!--                        <p>{{data.BookDesc}}</p>-->
-<!--                        <p>{{data.author}}</p>-->
-<!--                    </a-col>-->
-<!--                </a-row>-->
-
-<!--            </a-col>-->
-
-<!--        </a-row>-->
-<!--        <div>-->
-<!--            <a-back-top />-->
-<!--            Scroll down to see the bottom-right-->
-<!--            <strong style="color: rgba(64, 64, 64, 0.6)"> gray </strong>-->
-<!--            button.-->
-<!--        </div>-->
-<!--    </div>-->
-<!--</template>-->
 
 <script>
 
     export default {
-        name: "Books",
+        name: "Search",
         data() {
             return {
                 list: [],
@@ -120,6 +87,7 @@
 
             },
             goTo(id) {
+                console.log(id)
                 this.$router.push({path: `/chapters/${id}`})
             },
             clear() {
@@ -133,30 +101,18 @@
                 }
                 this.loading = true;
                 let that = this
-                if (this.$route.name == 'book') {
-                    let category = this.$route.params.category
-                    this.$http.get('/book/category/' + category + '/' + this.page + '/' + this.size)
-                        .then(function (response) {
-                            let data = response.data['data']
-                            that.list = that.list.concat(data)
-                            that.loading = false;
-                        })
-                        .catch(function (error) {
-                            console.log(error)
-                        })
-                } else {
-                    let searchWord = this.$route.params.searchWord
-                    this.$http.get('/book/search?key=' + searchWord + '&' + this.page + '&' + this.size)
-                        .then(function (response) {
-                            let data = response.data['data']
-                            console.log(data)
-                            that.list = that.list.concat(data)
-                            that.loading = false;
-                        })
-                        .catch(function (error) {
-                            console.log(error)
-                        })
-                }
+
+                let searchWord = this.$route.params.searchWord
+                this.$http2.get('/book/search/ ' + searchWord + ' /' + this.page)
+                    .then(function (response) {
+                        let data = response.data['data']
+                        that.list = that.list.concat(data)
+                        that.loading = false;
+                    })
+                    .catch(function (error) {
+                        console.log(error)
+                    })
+
             },
             pageChange(i) {
 
@@ -186,19 +142,50 @@
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+
     .book-img {
-        width: 80px;
-        height: 110px;
-        border-radius: 5px;
-        margin-bottom: 10px;
-        position: absolute;
-        /*top: 50%;*/
-        left: 30%;
+        width: 72px;
+        height: 96px;
+        margin-right: 12px;
     }
 
-    h5:hover {
-        color: #ed4259;
+    .book_item > div {
+        float: left;
     }
+
+    .book-info {
+        width: 216px;
+    }
+
+    h4 {
+        font: 16px/21px PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', 'Microsoft YaHei', sans-serif;
+        overflow: hidden;
+        height: 21px;
+
+
+        font-weight: bold;
+
+    }
+
+    .book-info p {
+        font: 12px/20px PingFangSC-Regular, '-apple-system', Simsun;
+        overflow: hidden;
+        height: 40px;
+        margin-bottom: 10px;
+        color: #666;
+
+        word-wrap: break-word;
+        word-break: break-all;
+
+    }
+
+    .book-img img {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, .35), 0 0 5px #f9f2e9 inset;
+    }
+
 
     .book-img:hover {
         -webkit-transform: scale(1.1);
@@ -207,21 +194,4 @@
         transform: scale(1.1);
     }
 
-
-    .book_item > div {
-        float: left;
-    }
-
-
-    p {
-        font: 12px/20px PingFangSC-Regular, '-apple-system', Simsun;
-        overflow: hidden;
-        height: 40px;
-        margin-bottom: 10px;
-        color: #666;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-    }
 </style>

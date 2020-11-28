@@ -131,6 +131,7 @@
             }
             ,
             getChapters() {
+              console.log(this.id)
                 let that = this;
                 return this.$http.get('/book/chapters/' + this.id + '/' + 0).then(function (res) {
                     that.ok = false

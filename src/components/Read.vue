@@ -47,7 +47,7 @@
         created() {
 
             this.cp = this.$store.getters.getCp(this.idx)
-
+console.log(this.cp);
             this.getContent()
 
         },
@@ -86,7 +86,6 @@
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
     .main-text-wrap {
-        background: #ede7da url('https://qidian.gtimg.com/qd/images/read.qidian.com/body_base_bg.5988a.png') repeat;
         font-family: 'Microsoft YaHei', PingFangSC-Regular, HelveticaNeue-Light, 'Helvetica Neue Light', sans-serif;
     }
 

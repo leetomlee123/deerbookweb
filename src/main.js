@@ -10,13 +10,13 @@ import store from './store/index'
 // import 'ant-design-vue/dist/antd.css';
 Vue.config.productionTip = false
 Vue.prototype.$http = axios.create({
-    // baseURL: 'http://192.168.3.56:8081/v1/',
-    baseURL: 'https://book.leetomlee.xyz/v1/',
+    // baseURL: 'http://localhost:8081/v1/',
+    baseURL: 'http://23.91.100.230:8081/v1/',
 
 });
 Vue.prototype.$http2 = axios.create({
-    // baseURL: 'http://192.168.3.56:8081/v1/',
-    baseURL: 'https://movie.leetomlee.xyz/',
+    // baseURL: 'http://localhost:8081/v1/',
+    baseURL: 'http://23.91.100.230:8081/',
 
 });
 // Vue.use(Antd);
